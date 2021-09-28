@@ -1,0 +1,11 @@
+{
+    "games": {
+        "game_1_berlin.html": "https://www.thespike.gg/match/100-thieves-acend/45621?map=all-maps&tab=economy",
+        "game_2_berlin.html": "https://www.thespike.gg/match/vision-strikers-gambit-esports/45623",
+        "game_3_berlin.html": "https://www.thespike.gg/match/envy-gambit-esports/45627?map=50872&tab=timeline",
+        "game_random_event.html": "https://www.thespike.gg/match/soniqs-norcal-esports/46283?map=51622&tab=economy"
+    },
+    "events": {
+        "examle_event_page.html": "https://www.thespike.gg/events/results/playoffs/1019"
+    }
+}

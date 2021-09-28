@@ -1,0 +1,17 @@
+TODO: Parse the HTML document to scrape the stats off a page
+
+
+Name all of the events in a hand-picked list
+
+Look up event (possibly using a search of the name)
+    - Specifically looking for the match ID number
+
+    Parse the event to get links to each of the games
+        -Links may have a very specific format, should be easy to find them with regex parsing
+
+        For each game link, parse the HTML doc to get stats
+            - Format stats and send to DB for storage
+            - Log summary stats at the end of processing to show progress
+        
+            - Wait 30 seconds before moving to another page
+

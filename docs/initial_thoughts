@@ -3,6 +3,8 @@ TODO: Parse the HTML document to scrape the stats off a page
 
 Name all of the events in a hand-picked list
 
+For all outgoing requests, I need to try to make it as "human-like" as possible, so I don't get blacklisted. This will require spoofing the headers to more or less match my Chrome browser, and to vary the time spent on each page (maybe normal distribution around 1min?)
+
 Look up event (possibly using a search of the name)
     - Specifically looking for the match ID number
 
@@ -15,3 +17,16 @@ Look up event (possibly using a search of the name)
         
             - Wait 30 seconds before moving to another page
 
+
+
+What stats am I trying to pull out of the matches?
+Round-level data:
+    Player-level data:
+        player_name, agent, combat_score, kills, assists, death, money_start, money_spent, gun, shield
+
+    Team-level data:
+        team_name, money_start, money_spent, win_type, round_win
+
+
+
+Much of the data will be in text format, so I will have to build mappings to more easibly reference items/players/shield levels

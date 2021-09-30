@@ -38,22 +38,44 @@ def get_event_name(soup):
 
 def get_match_details(soup):
     data = {}
-    maps = match_soup.find_all(class_=re.compile(r'map-wrapper map_[0-9]*'))
+    maps = soup.find_all(class_=re.compile(r'map-wrapper map_[0-9]*'))
 
     for m in maps:
-        timeline = m.find(class_='stat-wrap timeline-wrapper')
-        round_data = process_timeline(timeline)
-        break
+        teams = get_team_mappings(m)
+        round_data = process_timeline(m.find(class_='stat-wrap timeline-wrapper'))
         map_name = get_map_name(m)
-
         data[map_name] = round_data
 
     return data
 
 
 def process_timeline(timeline):
+    data = {}
     rounds = timeline.find_all(class_='round-data')
-    print(get_player_data(rounds[0]))
+    rnd_counter = 1
+
+    for rnd in rounds:
+        rnd_key = f'round_{rnd_counter}'
+
+        data[rnd_key] = get_player_data(rnd)
+        rnd_counter += 1
+
+    return data
+
+
+def get_map_name(map_info):
+    return map_info.find(class_='map-name').text
+
+
+def get_team_mappings(map_info):
+    team_1_name = map_info.find(class_='team-col first-half').find(class_='team-line team-1').find(class_='team-name').text
+    team_2_name = map_info.find(class_='team-col first-half').find(class_='team-line team-2').find(class_='team-name').text
+    return {'team-one': team_1_name,
+            'team-1': team_1_name,
+            'home-team': team_1_name,
+            'team-two': team_2_name,
+            'team-2': team_2_name,
+            'away-team': team_2_name}
 
 
 def get_team_data(rnd):
@@ -61,48 +83,68 @@ def get_team_data(rnd):
 
 
 def get_player_data(rnd):
-    home_team_data = rnd.find(class_='home-team')
-    home_team_stats = [i.text.strip() 
-                       for i in home_team_data.find_all(class_=re.compile('single-(column|stat)'))]
+    data = {'player_stats': {'home-team': None,
+                             'away-team': None},
+            'deaths': None}
 
-    away_team_data = rnd.find(class_='away-team')
-    away_team_stats = [i.text.strip() 
-                       for i in away_team_data.find_all(class_=re.compile('single-(column|stat)'))]
+    for k, v in data['player_stats'].items():
+        raw_stats = v.find_all(class_=re.compile('single-(column|stat)'))
+        data['player_stats'][k] = format_stats_table(raw_stats)
     
-    home_stats = format_table(home_team_stats)
-    away_stats = format_table(away_team_stats)
-    return home_stats, away_stats
+    data['deaths'] = get_deaths_per_round(rnd)
 
-def format_table(stats, col=6, row=7):
-    ind = row
+    return data
+
+
+def format_stats_table(stats, col_cnt=6, row_cnt=7):
+    ind = row_cnt
     table = []
-    keys = [stats[r] for r in range(0, row)]
+    keys = [stats[r].text.strip() for r in range(0, row_cnt)]
+    key_map = {'Player': 'player_name',
+               '': 'agent',
+               'SCORE': 'combat_score',
+               'K': 'kills',
+               'A': 'assists'}
 
-    for c in range(1, col):
+    for c in range(1, col_cnt):
         row_vals = {}
         
-        for r in range(0, row):
-            if stats[ind]:
-                row_vals[keys[r]] = stats[ind]
+        for r in range(0, row_cnt):
+            cleaned_key = key_map.get(keys[r])
+            cleaned_vals = [i.strip() for i in stats[ind].text.splitlines() if i]
+
+            if len(cleaned_vals) == 1:
+                row_vals[cleaned_key] = cleaned_vals[0]
+
+            if not cleaned_key:
+                if keys[r] == 'ECON':
+                    row_vals.update(dict(zip(['money_start', 'money_remaining'], cleaned_vals)))
+
+                if keys[r] == 'EQUIP':
+                    row_vals.update(dict(zip(['gun', 'armor'], cleaned_vals)))
             ind += 1
 
-        table.append(row_vals) 
-
-    for r in table:
-        cleaned_equip = [i.strip() for i in r['EQUIP'].splitlines() if i]
-        cleaned_econ = [i.strip() for i in r['ECON'].splitlines() if i]
-        r.update({'money_start': cleaned_econ[0],
-                  'money_remaining': cleaned_econ[1],
-                  'gun': cleaned_equip[0],
-                  'armor': cleaned_equip[1]})
-        del r['EQUIP']
-        del r['ECON']
+        table.append(row_vals)
 
     return table
 
 
-def get_map_name(map_info):
-    pass
+def get_deaths_per_round(rnd):
+    re_compiled = re.compile(r'\S+agents%2F([a-z]+)[-|_]\S+')
+    deaths = {'team-two': [],
+              'team-one': []}
+    deaths_in_timeline = rnd.find(class_='timeline').find_all(class_='enemy')
+
+    for d in deaths_in_timeline:
+        for k in deaths.keys():
+            try:
+                re_search = re_compiled.match(d.find(class_=k).attrs.get('src'))
+                deaths[k].append(re_search.group(1))
+
+            except AttributeError:
+                pass
+
+    return deaths
 
 
 if __name__ == '__main__':
@@ -115,4 +157,5 @@ if __name__ == '__main__':
     match_file = project_dir + '/data/game_1_berlin.html'
     match_html_str = read_html_file(match_file)
     match_soup = BeautifulSoup(match_html_str, 'html.parser')
+    #print(get_team_mapping(match_soup))
     get_match_details(match_soup)
